@@ -94,12 +94,13 @@ def test_nwb_output(linked_out):
 
     with pynwb.NWBHDF5IO(str(linked_out / "pose-kinematics" / "wt-01_behavior.nwb"), "r") as io:
         nwb = io.read()
-        assert nwb.identifier == "fixture-wt-01"
+        assert nwb.identifier != "fixture-wt-01" and "fixture-wt-01" in nwb.notes   # new UUID, source noted
+        assert nwb.source_script_file_name
         assert nwb.subject.subject_id == "m01"
         beh = nwb.processing["behavior"]
         pe = beh["PoseEstimation"]
         s = pe.pose_estimation_series["nose"]
-        assert s.unit == "cm"
+        assert s.unit == "centimeters"
         assert s.timestamps[0] == pytest.approx(3.25)
         assert "speed" in beh["BehavioralTimeSeries"].time_series
         regions = beh["arena_regions"].to_dataframe()

@@ -26,8 +26,8 @@ def write_behavior_nwb(path, sid, identity, ts, xy, conf, keypoints, edges, unit
     from pynwb.epoch import TimeIntervals
     from pynwb.file import Subject
 
-    unit = "cm" if units == "cm" else "pixels"
-    rate_unit = f"{unit}/s"
+    unit = "centimeters" if units == "cm" else "pixels"
+    rate_unit = f"{unit}/second"
     start = _dt(identity.get("session_start_time")) or datetime(1970, 1, 1, tzinfo=timezone.utc)
     ref = _dt(identity.get("timestamps_reference_time")) or start
     subj = None
@@ -41,12 +41,11 @@ def write_behavior_nwb(path, sid, identity, ts, xy, conf, keypoints, edges, unit
             subj = Subject(**s)
         except Exception:
             subj = None
-    nwb = pynwb.NWBFile(
-        session_description=identity.get("session_description") or f"session {sid}",
-        identifier=identity.get("identifier") or str(uuid.uuid4()),
-        session_start_time=start, timestamps_reference_time=ref, subject=subj,
-        source_script=f"pose-kinematics {app_version}", source_script_file_name="processor/main.py",
-        notes=f"Cleaned pose and kinematics for session {sid}. {cleaning_note} {scale_note}".strip())
+    from processor.common import nwbfile_kwargs
+
+    kw = nwbfile_kwargs(identity, sid, "pose-kinematics", app_version,
+                        f"Cleaned pose and kinematics for session {sid}. {cleaning_note} {scale_note}".strip())
+    nwb = pynwb.NWBFile(subject=subj, **kw)
     mod = nwb.create_processing_module("behavior", "Cleaned pose, kinematics and arena regions (pose-kinematics)")
     camera = nwb.create_device(name="camera", description="behaviour camera of the source pose")
     node_index = {k: i for i, k in enumerate(keypoints)}
@@ -73,7 +72,7 @@ def write_behavior_nwb(path, sid, identity, ts, xy, conf, keypoints, edges, unit
                            skeleton=skeleton, devices=[camera]))
     bts = BehavioralTimeSeries(name="BehavioralTimeSeries")
     named = [("speed", rate_unit, "centroid speed"), ("heading", "radians", "tail -> head angle, counter-clockwise on screen, 0 = right"),
-             ("angular_speed", "radians/s", "time derivative of the unwrapped heading"),
+             ("angular_speed", "radians/second", "time derivative of the unwrapped heading"),
              ("body_length", unit, "nose (or head) to tail base distance"),
              ("distance_to_wall", unit, "centroid distance to the arena wall")]
     for name, u, desc in named:

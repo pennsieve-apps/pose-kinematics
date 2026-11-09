@@ -218,6 +218,12 @@ def nwb_identity(nwb) -> dict:
         "timestamps_reference_time": nwb.timestamps_reference_time.isoformat() if nwb.timestamps_reference_time else None,
         "identifier": nwb.identifier,
         "session_description": nwb.session_description,
+        "session_id": nwb.session_id,
+        "experimenter": list(nwb.experimenter) if nwb.experimenter is not None else None,
+        "institution": nwb.institution,
+        "lab": nwb.lab,
+        "keywords": [str(k) for k in nwb.keywords[:]] if nwb.keywords is not None else None,
+        "experiment_description": nwb.experiment_description,
         "subject": subj,
     }
 

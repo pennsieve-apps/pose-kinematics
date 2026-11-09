@@ -30,6 +30,17 @@ def writable_caches() -> str:
     import tempfile
 
     tmp = os.environ.get("TMPDIR") or tempfile.gettempdir()
+    try:   # the runtime may name HOME / TMPDIR without creating them
+        os.makedirs(tmp, exist_ok=True)
+    except OSError:
+        tmp = tempfile.gettempdir()
+    os.environ["TMPDIR"] = tmp
+    tempfile.tempdir = None
+    if os.environ.get("HOME"):
+        try:
+            os.makedirs(os.environ["HOME"], exist_ok=True)
+        except OSError:
+            pass
     for var, sub in (("MPLCONFIGDIR", "mpl"), ("NUMBA_CACHE_DIR", "numba"), ("XDG_CACHE_HOME", "cache")):
         if not os.environ.get(var) or not os.access(os.environ[var], os.W_OK):
             os.environ[var] = os.path.join(tmp, sub)
@@ -193,3 +204,38 @@ def walk_files(root: Path):
         for f in sorted(filenames):
             if not f.startswith("."):
                 yield Path(dirpath) / f
+
+
+IDENTITY_FIELDS = ("session_id", "experimenter", "institution", "lab", "keywords", "experiment_description")
+
+
+def nwbfile_kwargs(identity: dict, sid: str, app: str, version: str, what: str) -> dict:
+    """NWBFile arguments per conventions.md "Time": session fields copied from the source NWB, a new
+    UUID identifier, the source file and identifier recorded in notes."""
+    import uuid
+    from datetime import datetime, timezone
+
+    def dt(text):
+        try:
+            return datetime.fromisoformat(text) if text else None
+        except ValueError:
+            return None
+
+    start = dt(identity.get("session_start_time")) or datetime(1970, 1, 1, tzinfo=timezone.utc)
+    src = identity.get("source_file")
+    derived = (f"Derived from {src}" + (f" (identifier {identity['identifier']})" if identity.get("identifier") else "")
+               if src or identity.get("identifier") else "No source NWB")
+    kw = {"session_description": identity.get("session_description") or f"session {sid}",
+          "identifier": str(uuid.uuid4()), "session_start_time": start,
+          "timestamps_reference_time": dt(identity.get("timestamps_reference_time")) or start,
+          "session_id": identity.get("session_id") or sid,
+          "source_script": f"{app} {version}", "source_script_file_name": "processor/main.py",
+          "notes": f"{what} {derived} by {app} {version}."}
+    for k in ("experimenter", "keywords"):
+        v = identity.get(k)
+        if v:
+            kw[k] = list(v) if isinstance(v, (list, tuple)) else [v]
+    for k in ("institution", "lab", "experiment_description"):
+        if identity.get(k):
+            kw[k] = identity[k]
+    return kw

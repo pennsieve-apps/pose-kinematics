@@ -211,7 +211,9 @@ def process_session(pf, found, params, out_dir, n_pose, input_dir, warnings_):
                 if getattr(sess, attr) is None:
                     setattr(sess, attr, getattr(info, attr))
     if sess.identity:
-        identity = sess.identity
+        identity = dict(sess.identity, source_file=sess.path.name)
+    elif identity:
+        identity = dict(identity, source_file=pf.path.name)
     resolve_times(pose, pf, sess if sess.path else None, found, params, warnings_)
     ts = pose.timestamps
     if len(ts) < 10:
