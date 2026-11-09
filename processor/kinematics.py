@@ -88,8 +88,42 @@ def odd_window(seconds: float, fps: float, minimum: int) -> int:
     return w if w % 2 else w + 1
 
 
-def clean_pose(pose, threshold: float, max_gap_s: float, smoothing: str, window_s: float):
-    """movement cleaning. Returns (positions (T,K,2), report)."""
+def jump_filter(xy, ts, max_speed):
+    """Drop points whose step from the last accepted point of the same keypoint implies a speed above
+    `max_speed` (position units per second). Walking forward, a point is accepted when
+    |p_i - p_last| <= max_speed * (t_i - t_last); otherwise it is set to NaN and p_last stays. A
+    confidently tracked excursion (the keypoint jumps away for several frames and back) is removed
+    as a whole, and the allowed distance grows with the time since the last accepted point, so
+    tracking recovers after a gap. Returns the filtered copy and the number of points dropped per
+    keypoint."""
+    out = xy.copy()
+    T, K, _ = xy.shape
+    dropped = np.zeros(K, int)
+    for k in range(K):
+        x, y = out[:, k, 0], out[:, k, 1]
+        ok = np.where(np.isfinite(x) & np.isfinite(y))[0]
+        if len(ok) < 2:
+            continue
+        # Start from the point closest to the median of the first 30 tracked points (not a jump), then
+        # walk forward and backward from it.
+        first = ok[:30]
+        start = first[np.argmin(np.hypot(x[first] - np.median(x[first]), y[first] - np.median(y[first])))]
+        for order in (ok[ok > start], ok[ok < start][::-1]):
+            last = start
+            for i in order:
+                dt = abs(ts[i] - ts[last])
+                if np.hypot(x[i] - x[last], y[i] - y[last]) <= max_speed * max(dt, 1e-6):
+                    last = i
+                else:
+                    x[i] = y[i] = np.nan
+                    dropped[k] += 1
+    return out, dropped
+
+
+def clean_pose(pose, threshold: float, max_gap_s: float, smoothing: str, window_s: float, max_speed_cm: float = 0.0,
+               scale=None):
+    """movement cleaning (confidence filter, jump filter, interpolation, smoothing).
+    Returns (positions (T,K,2), report)."""
     import xarray as xr
     from movement import filtering
 
@@ -111,6 +145,12 @@ def clean_pose(pose, threshold: float, max_gap_s: float, smoothing: str, window_
             pos = filtering.filter_by_confidence(pos, conf, threshold=threshold)
         low = np.isnan(pos.values[:, 0, :, 0]) & ~missing0
         report["below_confidence"] = {k: float(low[:, i].mean()) for i, k in enumerate(pose.keypoints)}
+        report["jumps_dropped"] = {k: 0 for k in pose.keypoints}
+        if max_speed_cm > 0 and scale:
+            arr = np.transpose(pos.values[:, :, :, 0], (0, 2, 1)) / np.array(scale)   # in cm
+            arr, dropped = jump_filter(arr, ts, max_speed_cm)
+            pos = pos.copy(data=np.transpose(arr * np.array(scale), (0, 2, 1))[:, :, :, None])
+            report["jumps_dropped"] = {k: int(d) for k, d in zip(pose.keypoints, dropped)}
         gap = max(1, int(round(max_gap_s * fps)))
         if max_gap_s > 0:
             pos = filtering.interpolate_over_time(pos, method="linear", max_gap=gap)

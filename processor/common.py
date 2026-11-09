@@ -99,6 +99,8 @@ def clean_json(obj):
         return [clean_json(v) for v in obj]
     if isinstance(obj, Path):
         return str(obj)
+    if hasattr(obj, "tolist") and getattr(obj, "ndim", 0) > 0:   # numpy / JAX arrays: nested lists
+        return clean_json(obj.tolist())
     if hasattr(obj, "item") and not isinstance(obj, (str, bytes)):
         try:
             return clean_json(obj.item())

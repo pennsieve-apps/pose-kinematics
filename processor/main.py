@@ -37,7 +37,9 @@ for noisy in ("matplotlib", "PIL", "fontTools", "h5py", "hdmf", "pynwb", "moveme
 
 APP_NAME = "pose-kinematics"
 REPO_ROOT = Path(__file__).resolve().parent.parent
-CITATIONS = ["10.5281/zenodo.12755724", "10.1038/s41593-018-0209-y"]
+CITATIONS = ["10.5281/zenodo.12755724"]
+TOOL_CITATIONS = {"DeepLabCut": ["10.1038/s41593-018-0209-y", "10.1038/s41596-019-0176-0"],
+                  "SLEAP": ["10.1038/s41592-022-01426-1"]}
 
 DEFAULTS = {
     "CONFIDENCE_THRESHOLD": "0.6",
@@ -55,6 +57,7 @@ DEFAULTS = {
     "TAIL_KEYPOINT": "auto",
     "FPS": "0",
     "IMMOBILE_SPEED": "2.0",
+    "MAX_SPEED_CM_S": "150",
     "GROUP_BY": "condition",
     "THREADS": "0",
 }
@@ -72,7 +75,7 @@ def read_parameters(env=os.environ) -> dict:
     p = {}
     try:
         for k in ("CONFIDENCE_THRESHOLD", "MAX_GAP_S", "SMOOTH_WINDOW_S", "PX_PER_CM", "CENTER_FRACTION",
-                  "WALL_ZONE_FRACTION", "FPS", "IMMOBILE_SPEED"):
+                  "WALL_ZONE_FRACTION", "FPS", "IMMOBILE_SPEED", "MAX_SPEED_CM_S"):
             p[k] = float(raw[k])
         p["THREADS"] = int(raw["THREADS"])
     except ValueError as exc:
@@ -100,7 +103,7 @@ def read_parameters(env=os.environ) -> dict:
     if p["CONFIDENCE_THRESHOLD"] < 0:
         raise ParameterError("CONFIDENCE_THRESHOLD must be >= 0 (0 = no confidence filter)")
     if p["MAX_GAP_S"] < 0 or p["SMOOTH_WINDOW_S"] < 0 or p["PX_PER_CM"] < 0 or p["FPS"] < 0 or p["THREADS"] < 0 \
-            or p["IMMOBILE_SPEED"] < 0:
+            or p["IMMOBILE_SPEED"] < 0 or p["MAX_SPEED_CM_S"] < 0:
         raise ParameterError("MAX_GAP_S, SMOOTH_WINDOW_S, PX_PER_CM, FPS, IMMOBILE_SPEED, THREADS must be >= 0")
     if not 0 < p["CENTER_FRACTION"] < 1:
         raise ParameterError("CENTER_FRACTION must be in (0, 1)")
@@ -260,6 +263,19 @@ def process_session(pf, found, params, out_dir, n_pose, input_dir, warnings_):
             scale = fit[0]
             scale_source = f"linear fit of the centroid to Position/{sess.position_cm[2]} in cm (R2 {fit[1]:.4f})"
     units = "cm" if scale else "px"
+    # Jump filter (needs the scale): clean again, dropping confidently tracked points whose step implies
+    # more than MAX_SPEED_CM_S, before interpolation, so the jumps become gaps that get interpolated.
+    if scale and params["MAX_SPEED_CM_S"] > 0:
+        xy_px, clean_report = K.clean_pose(pose, params["CONFIDENCE_THRESHOLD"], params["MAX_GAP_S"],
+                                           params["SMOOTHING"], params["SMOOTH_WINDOW_S"],
+                                           max_speed_cm=params["MAX_SPEED_CM_S"], scale=scale)
+        n_jump = sum(clean_report["jumps_dropped"].values())
+        if n_jump:
+            worst = sorted(clean_report["jumps_dropped"].items(), key=lambda kv: -kv[1])[:3]
+            log.info("%s: jump filter dropped %d points faster than %g cm/s (%s)", sid, n_jump,
+                     params["MAX_SPEED_CM_S"], ", ".join(f"{k} {v}" for k, v in worst))
+    elif params["MAX_SPEED_CM_S"] > 0:
+        warnings_.append(f"{sid}: no px -> cm scale, so the jump filter (MAX_SPEED_CM_S) was not applied")
     if scale:
         xy = xy_px / np.array(scale)
         arena = K.scale_arena(arena_px, *scale)
@@ -322,7 +338,8 @@ def process_session(pf, found, params, out_dir, n_pose, input_dir, warnings_):
     metrics = {
         "session_id": sid, "status": "ok", "units": units, "n_frames": int(len(ts)),
         "duration_s": float(ts[-1] - ts[0] + dur[-1]), "fps_effective": round(fps, 4), "time_source": pose.time_source,
-        "valid_fraction": float(valid.mean()), "distance_travelled": distance,
+        "valid_fraction": float(valid.mean()), "jumps_dropped": int(sum(clean_report["jumps_dropped"].values())),
+        "distance_travelled": distance,
         "distance_moving": float(np.nansum(feats["step_distance"][immobile_not])) if units == "cm" else None,
         "mean_speed": float(np.nanmean(nan_speed)) if nan_speed.size else None,
         "median_speed": float(np.nanmedian(nan_speed)) if nan_speed.size else None,
@@ -368,7 +385,7 @@ def process_session(pf, found, params, out_dir, n_pose, input_dir, warnings_):
     info = {"metrics": metrics, "occupancy": occ_rows, "figures": figs, "speed": feats["speed"][valid],
             "clean": clean_report, "anatomy": anat, "scale_source": scale_source, "arena": arena.to_dict(),
             "wall_band": wall_band, "session_nwb": sess.path.name if sess.path else None,
-            "session_nwb_rel": meta["session_nwb"],
+            "session_nwb_rel": meta["session_nwb"], "source_software": pose.source_software,
             "seconds": round(time.monotonic() - t0, 2)}
     log.info("%s: %d frames (%.1f s, %.2f fps, time from %s), %s, %.0f%% valid, distance %.1f %s, centre %.1f%%, "
              "thigmotaxis %.1f%%, %.1fs", sid, len(ts), metrics["duration_s"], fps, pose.time_source,
@@ -522,7 +539,9 @@ def main() -> int:
                          | {results[sid]["session_nwb_rel"] for sid in ok if results[sid]["session_nwb_rel"]}),
         "started": started.isoformat(), "finished": datetime.now(timezone.utc).isoformat(),
         "wall_seconds": round(time.monotonic() - t0, 2), "peak_rss_mb": peak_rss_mb(), "gpu": None,
-        "sessions": statuses, "citations": CITATIONS,
+        "sessions": statuses,
+        "citations": CITATIONS + sorted({d for sid in ok for sw, ds in TOOL_CITATIONS.items()
+                                         if sw.lower() in (results[sid]["source_software"] or "").lower() for d in ds}),
         "method": {sid: {"cleaning": results[sid]["clean"], "anatomy": vars(results[sid]["anatomy"]),
                          "scale_source": results[sid]["scale_source"], "wall_band": results[sid]["wall_band"]}
                    for sid in ok},

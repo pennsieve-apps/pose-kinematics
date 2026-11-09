@@ -189,3 +189,27 @@ def test_sleap_and_lightning_pose_files(tmp_path):
         dist[name] = float(m["mouse"]["distance_travelled"])
     assert dist["lp"] == pytest.approx(dist["dlc"], rel=1e-6)
     assert dist["sleap"] == pytest.approx(dist["dlc"], rel=1e-3)
+
+
+def test_jump_filter_removes_confident_excursions(tmp_path):
+    """Every keypoint jumps 80 cm away for 0.3 s and back, with full confidence (as F07 of the demo
+    data does): the jump filter must remove it, so the distance stays near the truth."""
+    from tests.simulate import simulate, to_pixels
+
+    sim = simulate(30.0, 30.0, 30.0, seed=11)
+    px = to_pixels(sim["keypoints"], 8.0, (300.0, 260.0))
+    conf = np.full(px.shape[:2], 0.99)
+    bad = px.copy()
+    for a in (300, 600):
+        bad[a:a + 9] += np.array([80 * 8.0, 0.0])   # 80 cm to the right for 9 frames
+    truth = float(np.hypot(*np.diff(sim["centroid"], axis=0).T).sum())
+    (tmp_path / "in").mkdir()
+    make_fixture.write_dlc_csv(tmp_path / "in" / "mouse.csv", bad, conf)
+    out = {}
+    for name, speed in (("on", 150), ("off", 0)):
+        r = run(tmp_path / "in", tmp_path / name, PX_PER_CM=8, FPS=30, MAX_SPEED_CM_S=speed)
+        assert r.returncode == 0, r.stdout + r.stderr
+        out[name] = metrics(tmp_path / name)["mouse"]
+    assert int(out["on"]["jumps_dropped"]) >= 6 * 18
+    assert float(out["on"]["distance_travelled"]) == pytest.approx(truth, rel=0.15)
+    assert float(out["off"]["distance_travelled"]) > truth + 250   # the excursions add 4 x 80 cm

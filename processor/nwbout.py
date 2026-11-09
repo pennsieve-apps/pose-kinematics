@@ -28,8 +28,6 @@ def write_behavior_nwb(path, sid, identity, ts, xy, conf, keypoints, edges, unit
 
     unit = "centimeters" if units == "cm" else "pixels"
     rate_unit = f"{unit}/second"
-    start = _dt(identity.get("session_start_time")) or datetime(1970, 1, 1, tzinfo=timezone.utc)
-    ref = _dt(identity.get("timestamps_reference_time")) or start
     subj = None
     if identity.get("subject"):
         s = dict(identity["subject"])

@@ -9,7 +9,8 @@ Computational Neuroscience Unit, University College London**
 [10.5281/zenodo.12755724](https://doi.org/10.5281/zenodo.12755724)). It reads pose files made with
 [DeepLabCut](https://github.com/DeepLabCut/DeepLabCut) (Mathis lab, EPFL; Mathis et al. 2018),
 [SLEAP](https://github.com/talmolab/sleap) (Talmo Pereira, Salk Institute, and the Murthy and
-Shaevitz labs, Princeton; Pereira et al. 2022) and [Lightning Pose](https://github.com/paninski-lab/lightning-pose)
+Shaevitz labs, Princeton; Pereira et al. 2022; read through [sleap-io](https://github.com/talmolab/sleap-io)
+by Divya Murali, Liezl Maree, David Samy and Talmo Pereira) and [Lightning Pose](https://github.com/paninski-lab/lightning-pose)
 (Paninski lab, Columbia), and NWB files with the [ndx-pose](https://github.com/rly/ndx-pose)
 extension (Ryan Ly, Ben Dichter, Alexander Mathis, Talmo Pereira and colleagues) through
 [PyNWB](https://github.com/NeurodataWithoutBorders/pynwb) (Neurodata Without Borders; Rübel et al.
@@ -51,8 +52,15 @@ Per session, streaming (one session in memory at a time):
    `PoseEstimation` or video `ImageSeries` timestamps, else `<video stem>_timestamps.csv`
    (`frame, time`), else `frame / FPS`. `summary.json` says which (`time_source`), and the times are
    never re-zeroed.
-3. **Clean.** Points with confidence `< CONFIDENCE_THRESHOLD` are removed; gaps up to `MAX_GAP_S`
-   are linearly interpolated; then a Savitzky–Golay filter (order 2, `SMOOTH_WINDOW_S`; Savitzky &
+3. **Clean.** Points with confidence `< CONFIDENCE_THRESHOLD` are removed; then, once the px → cm
+   scale is known, a **jump filter** removes confidently tracked points whose step from the last
+   accepted point of the same keypoint implies more than `MAX_SPEED_CM_S` (default 150 cm/s:
+   about three times the fastest real centroid step in the demo data, 1.8 cm per 33-ms frame ≈
+   54 cm/s, and above the running speeds of mice in an open field, so only tracking errors exceed
+   it; a whole excursion away and back is removed, and the count is logged and in `metrics.csv`
+   `jumps_dropped`); gaps up to `MAX_GAP_S`
+   are linearly interpolated (a step across a gap that stays missing counts as 0 distance, so long
+   tracking losses shorten the distance travelled; `valid_fraction` says how much is missing); then a Savitzky–Golay filter (order 2, `SMOOTH_WINDOW_S`; Savitzky &
    Golay 1964) or a rolling median smooths every keypoint.
 4. **Scale (px → cm)**, first that applies: `PX_PER_CM`; `ARENA_SIZE_CM` over the arena outline
    in the session NWB (else over the extent of all tracked keypoints, approximate); the scale
@@ -105,6 +113,7 @@ pose tool's suffix (`<video>DLC_resnet50_...`, `.predictions`, `_pose`).
 | `TAIL_KEYPOINT` | `auto` | Tail base. |
 | `FPS` | `0` | Frame rate for files without timestamps; 0 = from the file, else 30 (warning). |
 | `IMMOBILE_SPEED` | `2.0` | cm/s below which the animal counts as immobile. |
+| `MAX_SPEED_CM_S` | `150` | Jump filter: points implying a faster step are removed before interpolation (needs a cm scale); 0 = off. |
 | `GROUP_BY` | `condition` | sessions.csv column compared (falls back to `group`). |
 | `THREADS` | `0` | numpy/BLAS threads; 0 = cgroup CPU quota. |
 
@@ -118,7 +127,7 @@ and skipped.
 | `<session_id>_behavior.nwb` | Session fields copied from the source NWB (`session_start_time`, `timestamps_reference_time`, `session_id`, `subject`, `experimenter`, `institution`, `lab`, `keywords`, `experiment_description`); a new UUID `identifier`, with the source file and its identifier in `notes`; units spelled the NWB way (`centimeters`, `centimeters/second`, `radians`). Passes nwb-inspect (schema, NWB Inspector, DANDI) on all six demo sessions. `processing/behavior`: `PoseEstimation` (cleaned keypoints, cm or pixels, original confidence, timestamps on the session clock; `Skeletons`), `BehavioralTimeSeries` (`speed`, `heading`, `angular_speed`, `body_length`, `distance_to_wall`, `keypoint_speed` (T × K)), `Position/centroid`, `arena_regions` (`TimeIntervals`: start_time, stop_time, region = center / periphery / wall_zone / roi_<name>). |
 | `<session_id>_kinematics.parquet` | One row per frame: `time, frame, centroid_x, centroid_y, speed, step_distance, heading, angular_speed, body_length, kp_<k>_x, kp_<k>_y, kp_<k>_speed` (every keypoint), `in_center, in_periphery, in_wall_zone, distance_to_wall, roi_<name>, valid`. Parquet metadata `pennsieve` (JSON): units, px_per_cm, scale source, keypoints, skeleton edges, centroid/head/tail keypoints, fps, time source, arena, sheet columns and the source NWB identity. The input of behavior-syllables. |
 | `occupancy.csv` | `session_id, region, seconds, fraction, entries, latency_s, mean_speed, subject_id, condition`. |
-| `metrics.csv` | Per session: `units, n_frames, duration_s, fps_effective, time_source, valid_fraction, distance_travelled, distance_moving, mean_speed, median_speed, p95_speed, immobile_fraction, center_fraction, center_entries, periphery_fraction, thigmotaxis, mean_distance_to_wall, mean_body_length, mean_abs_angular_speed, px_per_cm_x, px_per_cm_y` + sessions.csv columns. |
+| `metrics.csv` | Per session: `units, n_frames, duration_s, fps_effective, time_source, valid_fraction, jumps_dropped, distance_travelled, distance_moving, mean_speed, median_speed, p95_speed, immobile_fraction, center_fraction, center_entries, periphery_fraction, thigmotaxis, mean_distance_to_wall, mean_body_length, mean_abs_angular_speed, px_per_cm_x, px_per_cm_y` + sessions.csv columns. |
 | `group_stats.csv` | Per metric: `n_`, `mean_`, `sd_` per group, `test, statistic, p_value, test_secondary, p_value_secondary, difference, hedges_g`. |
 | `sessions.csv` | `session_id, path, subject_id, condition, group, ..., status, n_frames`. |
 | `speed_distribution.png`, `group_comparison.png`, `<session_id>_trajectory.png`, `<session_id>_occupancy.png`, `<session_id>_pose_qc.png` | Figures; captions in `summary.json`. |
@@ -135,19 +144,26 @@ pose (14 keypoints) from the NWB files, defaults. Output in
 | F35 | WT | 97 % | 50.0 | 7.1 | 4.2 % | 80.7 % | 37.6 % |
 | F40 | WT | 92 % | 40.2 | 5.9 | 2.2 % | 90.8 % | 45.0 % |
 | F48 | WT | 100 % | 12.6 | 1.7 | 2.2 % | 92.6 % | 82.0 % |
-| F07 | 5xFAD | 92 % | 53.0 | 7.9 | 4.8 % | 78.8 % | 45.8 % |
+| F07 | 5xFAD | 91 % | 48.3 | 7.3 | 4.8 % | 78.8 % | 45.8 % |
 | F14 | 5xFAD | 97 % | 39.3 | 5.6 | 11.9 % | 68.1 % | 44.9 % |
 | F20 | 5xFAD | 98 % | 51.7 | 7.2 | 18.1 % | 49.9 % | 33.0 % |
 
 **Check against the authors' own numbers**: distance travelled is within 1–3 % of the path length
-of the authors' `Position` series in every session (e.g. F35 4 996 vs 5 047 cm, F48 1 263 vs
-1 272 cm), mean speed within 0.1–0.5 cm/s of their `speed` series, and our per-frame speed
-correlates with theirs at r = 0.93–0.98 (F07: 0.11, where the two disagree about which frames are
-missing). The px → cm scale came from the `arena_geometry` description in every file.
+of the authors' `Position` series in five sessions (e.g. F35 4 996 vs 5 047 cm, F48 1 263 vs
+1 272 cm), mean speed within 0.2 cm/s of their `speed` series, and our per-frame speed
+correlates with theirs at Pearson r = 0.96–0.99 (Spearman 0.92–0.98) in all six. **F07** is the
+exception the jump filter exists for: its DeepLabCut body centre jumps ~80 cm away and back within
+0.3 s at t ≈ 46 s and 103 s with high confidence (speeds up to 943 cm/s). Without the filter these
+excursions added 4.8 m (9 %) to F07's distance and, as single huge speeds, dropped the speed
+correlation to Pearson r 0.38 (Spearman 0.95, measured by the independent review). With `MAX_SPEED_CM_S=150` (173 points dropped across 14 keypoints) F07
+travels 48.3 m (was 53.0 m) and r = 0.99; the authors' own `Position` has a similar excursion at
+t ≈ 53 s (6 steps > 10 cm, 3.3 m), and without it their path is 50.4 m. The filter drops 11–105
+points in the other sessions (nose, head and tail base mostly) without changing their distances
+by more than 0.1 %. The px → cm scale came from the `arena_geometry` description in every file.
 
 **WT vs 5xFAD** (n = 3 sessions per group; Welch t-test, Hedges g = 5xFAD − WT in pooled SDs):
 centre time 11.6 ± 6.6 % vs 2.9 ± 1.1 % (p = 0.15, g = 1.5); thigmotaxis 66 ± 15 % vs 88 ± 6 %
-(p = 0.10, g = −1.6); distance 48.0 ± 7.5 m vs 34.3 ± 19.4 m (p = 0.35, g = 0.75). The 5xFAD mice
+(p = 0.10, g = −1.6); distance 46.4 ± 6.4 m vs 34.3 ± 19.4 m (p = 0.39, g = 0.67). The 5xFAD mice
 explored the centre more and hugged the wall less, the direction reported for disinhibited
 behaviour in 5xFAD mice, but **with three animals per group the comparison is badly underpowered**
 (Mann–Whitney p cannot go below 0.1 at n = 3 + 3) and one WT animal (F48) barely moved. Treat it
@@ -163,15 +179,16 @@ simulated (walk 16 cm/s, rest/rear < 1 cm/s; body 9.0 / 6.5 / 4.1 cm).
 `computeTypes: [standard]`, 1 vCPU / 2048 MiB, 15 min timeout: within the platform's Lambda limits,
 so the platform can run it as a Lambda step (it decides from `runtime` and the image size). Measured in the
 linux/amd64 image under emulation on an M-series Mac (Docker `--memory 2g --cpus 1 --network
-none`), six 12-min sessions (129 484 frames, 14 keypoints): **82 s** processing (125 s including
-container start; 288–327 s when sharing the machine with other builders' jobs), peak RSS **0.57–0.78 GB**,
-cgroup `memory.peak` **0.84–1.08 GB**. Image: 1.1 GB unpacked (`/usr/local`), well under
+none`), six 12-min sessions (129 484 frames, 14 keypoints), with the jump filter (two cleaning
+passes): **54 s** processing, 78 s including container start (up to 327 s when sharing the
+machine with other builders' jobs), peak RSS **0.65 GB**, cgroup `memory.peak` **1.0 GB**. Image: 1.1 GB unpacked (`/usr/local`), well under
 Lambda's 10 GB. Memory grows with one session; a one-hour
 session at 30 fps (~110 k frames) should stay under 2 GB; much longer recordings or many
 keypoints: use the standard compute type with more memory.
 
-It is Lambda-safe: the demo run above also passes as the brief's Lambda test (`docker run
---read-only --user 65534:65534 --tmpfs /tmp`, HOME, TMPDIR, INPUT_DIR and OUTPUT_DIR under `/tmp`):
+It is Lambda-safe: the demo run above is the brief's Lambda test (`docker run --read-only --user
+65534:65534 --tmpfs /tmp:mode=1777`, HOME and TMPDIR under `/tmp/w`, INPUT_DIR and OUTPUT_DIR under
+`/tmp/s`):
 caches (matplotlib, numba, XDG, movement's log) go to `$TMPDIR` / `$HOME`, nothing is read from the
 image's `/tmp` or HOME.
 
@@ -229,6 +246,9 @@ Pose estimation tools whose files this app reads (DeepLabCut asks for both paper
 
 > Pereira TD, Tabris N, Matsliah A, Turner DM, Li J, Ravindranath S, Papadoyannis ES, Normand E, Deutsch DS, Wang ZY, McKenzie-Smith GC, Mitelut CC, Castro MD, D’Uva J, Kislin M, Sanes DH, Kocher SD, Wang SSH, Falkner AL, Shaevitz JW, Murthy M. **SLEAP: A deep learning system for multi-animal pose tracking.** Nature Methods 19(4):486-495 (2022).
 > https://doi.org/10.1038/s41592-022-01426-1, PMID 35379947.
+
+SLEAP files are read with sleap-io (no paper; https://github.com/talmolab/sleap-io, by Divya Murali,
+Liezl Maree, David Samy and Talmo Pereira, Talmo Lab, Salk Institute; listed in `CITATION.cff`).
 
 Neurodata Without Borders (file format; PyNWB and ndx-pose, https://github.com/rly/ndx-pose):
 

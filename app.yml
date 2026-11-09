@@ -119,6 +119,15 @@ parameters:
     description: Centroid speed (cm/s) below which a frame counts as immobile; also the floor for distance_moving.
     defaultValue: 2.0
     min: 0
+  - name: MAX_SPEED_CM_S
+    type: number
+    description: >-
+      Jump filter: a point whose step from the last accepted point of the same keypoint implies a speed
+      above this (cm/s) is removed before interpolation (confident tracking errors: a keypoint jumping
+      away and back). Needs a cm scale; 0 = off. 150 is about three times the fastest real body-centre
+      step in the demo data.
+    defaultValue: 150
+    min: 0
   - name: GROUP_BY
     type: string
     description: The sessions.csv column whose values are compared (e.g. genotype); falls back to `group` when `condition` is empty.

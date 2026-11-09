@@ -336,6 +336,20 @@ references:
   license: BSD-3-Clause
   version: 0.4.0
 - type: software
+  title: 'sleap-io: Standalone utilities for working with pose data from SLEAP and other tools'
+  authors:
+  - family-names: Murali
+    given-names: Divya
+  - family-names: Maree
+    given-names: Liezl
+  - family-names: Samy
+    given-names: David
+  - family-names: Pereira
+    given-names: Talmo
+  repository-code: https://github.com/talmolab/sleap-io
+  license: BSD-3-Clause
+  version: 0.9.5
+- type: software
   title: PyNWB
   authors:
   - name: Neurodata Without Borders
