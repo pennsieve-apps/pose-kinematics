@@ -7,7 +7,6 @@ annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.16.0
 attrs==26.1.0
-awslambdaric==4.2.3
 beautifulsoup4==4.15.0
 blosc2==4.14.1
 Bottleneck==1.6.0
@@ -104,7 +103,6 @@ shellingham==1.5.4
 simplejson==4.2.0
 skia-python==144.1
 sleap-io==0.9.5
-snapshot-restore-py==1.0.0
 soupsieve==4.0.1
 superqt==0.9.1
 tables==3.11.1

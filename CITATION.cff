@@ -83,7 +83,7 @@ references:
   doi: 10.1038/s41593-018-0209-y
   identifiers:
   - type: other
-    value: PMID:30127430
+    value: '30127430'
     description: PubMed ID
 - type: article
   title: Using DeepLabCut for 3D markerless pose estimation across species and behaviors
@@ -109,7 +109,7 @@ references:
   doi: 10.1038/s41596-019-0176-0
   identifiers:
   - type: other
-    value: PMID:31227823
+    value: '31227823'
     description: PubMed ID
 - type: article
   title: 'SLEAP: A deep learning system for multi-animal pose tracking'
@@ -165,7 +165,7 @@ references:
   doi: 10.1038/s41592-022-01426-1
   identifiers:
   - type: other
-    value: PMID:35379947
+    value: '35379947'
     description: PubMed ID
 - type: article
   title: The Neurodata Without Borders ecosystem for neurophysiological data science
@@ -201,7 +201,7 @@ references:
   doi: 10.7554/eLife.78362
   identifiers:
   - type: other
-    value: PMID:36193886
+    value: '36193886'
     description: PubMed ID
 - type: article
   title: Smoothing and Differentiation of Data by Simplified Least Squares Procedures.
@@ -235,7 +235,7 @@ references:
   doi: 10.1016/0166-4328(94)90008-6
   identifiers:
   - type: other
-    value: PMID:7913324
+    value: '7913324'
     description: PubMed ID
 - type: article
   title: 'The open field as a paradigm to measure the effects of drugs on anxiety-like behaviors: a review'
@@ -253,7 +253,7 @@ references:
   doi: 10.1016/s0014-2999(03)01272-x
   identifiers:
   - type: other
-    value: PMID:12600700
+    value: '12600700'
     description: PubMed ID
 - type: article
   title: THE GENERALIZATION OF ‘STUDENT'S’ PROBLEM WHEN SEVERAL DIFFERENT POPULATION VARLANCES ARE INVOLVED
@@ -269,7 +269,7 @@ references:
   doi: 10.1093/biomet/34.1-2.28
   identifiers:
   - type: other
-    value: PMID:20287819
+    value: '20287819'
     description: PubMed ID
 - type: article
   title: On a Test of Whether one of Two Random Variables is Stochastically Larger than the Other

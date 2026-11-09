@@ -26,12 +26,14 @@ left out of the image; it is only needed by movement's video helpers, which this
 | certifi, tqdm, orjson | respective developers | Dependencies | MPL-2.0 (tqdm: MPL-2.0 AND MIT; orjson: MPL-2.0 AND (Apache-2.0 OR MIT)); shipped unmodified | PyPI |
 | colorcet 3.2.1 | Holoviz | Dependency (colour maps) | CC-BY-4.0 | https://github.com/holoviz/colorcet |
 | Other transitive dependencies (aiohttp, attrs, click, httpx, jsonschema, Jinja2, loguru, pydantic, PyYAML, requests, rich, typer, ...) | respective developers | Versions in `requirements.txt` | MIT / BSD / Apache-2.0 / PSF-2.0 / ISC / MIT-CMU (Pillow) | PyPI |
-| awslambdaric 4.2.3 (+ simplejson, snapshot-restore-py) | Amazon Web Services | Lambda runtime interface client | Apache-2.0 (simplejson: MIT OR AFL-2.1) | https://github.com/aws/aws-lambda-python-runtime-interface-client |
 | python:3.12.16-slim-bookworm | Python Software Foundation, Debian | Base image | PSF-2.0 (Python); Debian packages under their own free licences | https://hub.docker.com/_/python |
 
 ## Not bundled
 
 - **DeepLabCut, SLEAP, Lightning Pose**: only their output files are read (through movement); the
-  tools themselves are not in the image.
+  tools themselves are not in the image. SLEAP `.slp` and analysis `.h5` files are read by movement
+  through **sleap-io** (BSD-3-Clause). **sleap-nn** (SLEAP's new PyTorch backend) is deliberately not
+  installed: its LICENSE file says GPL-3.0 while its package metadata says BSD-3-Clause (checked
+  2026-11-09), and this app does not need it to read SLEAP files.
 - **Demo data** (not in the image or the repository): DANDI:002047 (Plusnin, Pospelov et al.,
   doi:10.48324/dandi.002047/0.261106.0903), CC-BY-4.0.

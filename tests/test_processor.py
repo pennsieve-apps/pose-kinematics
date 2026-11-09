@@ -154,9 +154,37 @@ def test_bad_parameters_and_no_input(fixture_dir, tmp_path):
     assert run(tmp_path / "empty", tmp_path / "d").returncode == 1
 
 
-def test_lambda_handler(fixture_dir, tmp_path, monkeypatch):
-    from processor import handler
+def test_sleap_and_lightning_pose_files(tmp_path):
+    """The same simulated session as a SLEAP analysis HDF5 (read through movement / sleap-io) and a
+    Lightning Pose CSV gives the same kinematics as the DeepLabCut CSV."""
+    import h5py
 
-    out = handler.handler({"inputDir": str(fixture_dir / "linked"), "outputDir": str(tmp_path), "PX_PER_CM": 8}, None)
-    assert out["status"] == "ok"
-    assert (tmp_path / "pose-kinematics" / "summary.json").exists()
+    from tests.simulate import KEYPOINTS, simulate, to_pixels
+
+    sim = simulate(20.0, 30.0, 30.0, seed=7)
+    px = to_pixels(sim["keypoints"], 8.0, (300.0, 260.0))
+    n, k = px.shape[:2]
+    conf = np.full((n, k), 0.95)
+    for name in ("dlc", "lp", "sleap"):
+        (tmp_path / name).mkdir()
+    make_fixture.write_dlc_csv(tmp_path / "dlc" / "mouse.csv", px, conf)
+    text = (tmp_path / "dlc" / "mouse.csv").read_text().replace(make_fixture.SCORER, "heatmap_tracker")
+    (tmp_path / "lp" / "mouse.csv").write_text(text)
+    with h5py.File(tmp_path / "sleap" / "mouse.analysis.h5", "w") as f:
+        f["tracks"] = np.transpose(px, (2, 1, 0))[None].astype("float64")          # (tracks, 2, nodes, frames)
+        f["point_scores"] = np.transpose(conf)[None]                                  # (tracks, nodes, frames)
+        f["instance_scores"] = np.ones((1, n))
+        f["tracking_scores"] = np.ones((1, n))
+        f["track_occupancy"] = np.ones((n, 1), dtype=np.uint8)
+        f["node_names"] = [s.encode() for s in KEYPOINTS]
+        f["track_names"] = [b"mouse"]
+    dist = {}
+    for name in ("dlc", "lp", "sleap"):
+        out = tmp_path / f"out-{name}"
+        r = run(tmp_path / name, out, PX_PER_CM=8, FPS=30)
+        assert r.returncode == 0, name + r.stdout + r.stderr
+        m = metrics(out)
+        assert list(m) == ["mouse"], m
+        dist[name] = float(m["mouse"]["distance_travelled"])
+    assert dist["lp"] == pytest.approx(dist["dlc"], rel=1e-6)
+    assert dist["sleap"] == pytest.approx(dist["dlc"], rel=1e-3)

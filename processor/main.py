@@ -27,7 +27,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from processor.common import peak_rss_mb, set_threads, write_json
+from processor.common import peak_rss_mb, set_threads, writable_caches, write_json
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 log = logging.getLogger("pose-kinematics")
@@ -58,7 +58,6 @@ DEFAULTS = {
     "GROUP_BY": "condition",
     "THREADS": "0",
 }
-PARAMETERS = tuple(DEFAULTS)
 METRICS = [("distance_travelled", "Distance travelled"), ("mean_speed", "Mean speed"),
            ("center_fraction", "Time in centre (fraction)"), ("thigmotaxis", "Thigmotaxis (wall-zone fraction)"),
            ("immobile_fraction", "Immobile (fraction)")]
@@ -398,8 +397,7 @@ def main() -> int:
         log.error("INPUT_DIR and OUTPUT_DIR must be set")
         return 2
     input_dir, output_dir = Path(input_dir), Path(output_dir)
-    os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
-    os.environ.setdefault("HOME", "/tmp")
+    writable_caches()
     try:
         params = read_parameters()
     except ParameterError as exc:

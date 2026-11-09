@@ -5,8 +5,7 @@ ENV PIP_NO_CACHE_DIR=1 \
 
 WORKDIR /processor
 
-# The complete pinned dependency set (requirements.in resolved in this base image; wheels only),
-# including the AWS Lambda runtime interface client: the image runs as a container or as a Lambda.
+# The complete pinned dependency set (requirements.in resolved in this base image; wheels only).
 COPY requirements.txt /processor/requirements.txt
 RUN pip install --no-deps --only-binary=:all: -r /processor/requirements.txt \
     && find /usr/local/lib/python3.12/site-packages -name '*.pyc' -delete \
@@ -18,19 +17,18 @@ COPY VERSION /processor/VERSION
 ENV PYTHONPATH="/processor" \
     PYTHONUNBUFFERED=1 \
     HOME=/tmp \
-    MPLBACKEND=Agg \
-    MPLCONFIGDIR=/tmp/matplotlib \
-    NUMBA_CACHE_DIR=/tmp/numba \
-    XDG_CACHE_HOME=/tmp/cache
+    USER=app \
+    LOGNAME=app \
+    MPLBACKEND=Agg
 
-# Build matplotlib's font cache and import the stack once, so a run needs no writes outside /tmp and
-# no network (movement, pynwb and ndx-pose load everything they need from the installed packages).
-RUN python -c "import matplotlib.pyplot, movement.io.load_poses, movement.filtering, movement.kinematics, pynwb, ndx_pose, pyarrow.parquet" \
-    && mkdir -p /tmp/matplotlib /tmp/numba /tmp/cache /tmp/.movement && chmod -R a+rwX /tmp/matplotlib /tmp/numba /tmp/cache /tmp/.movement
+# Check that the stack imports (no network at run time: movement, pynwb and ndx-pose need nothing
+# else). Nothing is baked into /tmp or HOME: on Lambda both are empty and only INPUT_DIR, OUTPUT_DIR,
+# HOME and TMPDIR are writable; processor/common.py points matplotlib / numba / XDG caches at $TMPDIR.
+RUN MPLCONFIGDIR=/dev/shm/mpl HOME=/dev/shm python -c "import matplotlib.pyplot, movement.io.load_poses, movement.filtering, movement.kinematics, pynwb, ndx_pose, pyarrow.parquet"
 
-# Runs as uid 1000 on the platform; nothing here needs root.
+# Runs as uid 1000 on ECS and as an arbitrary unprivileged user on Lambda; nothing here needs root or a
+# particular uid (USER=app above answers getpass).
 RUN useradd --uid 1000 --no-create-home --home-dir /tmp --shell /usr/sbin/nologin processor
 USER 1000
 
-# Runs main() once as a container, or serves processor.handler as a Lambda function (processor/entry.py).
-ENTRYPOINT ["python3", "-m", "processor.entry"]
+ENTRYPOINT ["python3", "-m", "processor.main"]

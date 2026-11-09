@@ -26,10 +26,10 @@ runtime:
   cpu: 1024
   # Measured on the demo data (6 sessions x 12 min, linux/amd64 under emulation): see README "Runtime".
   memory: 2048
-  # A light step: the image also runs as a Lambda function (processor/entry.py).
+  # A light step within the platform's Lambda limits (memory <= 10240 MiB, timeout <= 900 s, image
+  # < 10 GB): the platform decides Lambda eligibility from these values (app-deploy-service docs/builds.md).
   computeTypes:
     - standard
-    - lambda
   timeoutSeconds: 900
 parameters:
   - name: CONFIDENCE_THRESHOLD
@@ -135,11 +135,17 @@ inputs:
       NWB with PoseEstimation), DeepLabCut .h5/.csv, SLEAP .slp / analysis .h5, Lightning Pose .csv.
       Optional sessions.csv (session_id, path, subject_id, condition, ...) and
       <video stem>_timestamps.csv (frame, time).
+    # NWB pose, plain HDF5 (DeepLabCut / SLEAP analysis .h5), CSV (DeepLabCut, Lightning Pose, sheets,
+    # timestamps), SLEAP .slp (no registry type: octet-stream); plus the rest of pose-estimate's
+    # `pose` output (QC video, figures, JSON), which is ignored, so that port connects.
     mediaTypes:
       - "application/x-hdf5; profile=nwb"
       - application/x-hdf5
       - text/csv
       - application/octet-stream
+      - application/json
+      - image/png
+      - video/mp4
     placement: subfolder
     required: true
   - name: session

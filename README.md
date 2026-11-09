@@ -42,7 +42,9 @@ by up to seconds relative to the calcium imaging.
 Per session, streaming (one session in memory at a time):
 
 1. **Read.** ndx-pose NWB (`PoseEstimation` in any processing module) with its `timestamps`;
-   DeepLabCut `.h5`/`.csv`, SLEAP `.slp`/analysis `.h5`, Lightning Pose `.csv` through movement.
+   DeepLabCut `.h5`/`.csv`, SLEAP `.slp`/analysis `.h5` (via sleap-io, not the GPL-ambiguous
+   sleap-nn), Lightning Pose `.csv` through movement's loaders (tested on the same simulated
+   session written in all three formats).
    Several individuals: the most completely tracked one is analysed (logged). Several pose files
    for one session (pose-estimate writes both `_pose.nwb` and the DLC `_pose.h5`): the NWB wins.
 2. **Time** (conventions.md, "Time"): NWB timestamps; for other formats, the session NWB's
@@ -158,13 +160,20 @@ simulated (walk 16 cm/s, rest/rear < 1 cm/s; body 9.0 / 6.5 / 4.1 cm).
 
 ## Runtime
 
-`computeTypes: [standard, lambda]`, 1 vCPU / 2048 MiB, 15 min timeout. Measured in the
+`computeTypes: [standard]`, 1 vCPU / 2048 MiB, 15 min timeout: within the platform's Lambda limits,
+so the platform can run it as a Lambda step (it decides from `runtime` and the image size). Measured in the
 linux/amd64 image under emulation on an M-series Mac (Docker `--memory 2g --cpus 1 --network
 none`), six 12-min sessions (129 484 frames, 14 keypoints): **82 s** processing (125 s including
-container start), peak RSS **0.78 GB**, cgroup `memory.peak` **1.08 GB**. Image: 1.3 GB unpacked
-(482 MB compressed), well under Lambda's 10 GB. Memory grows with one session; a one-hour
+container start; 288–327 s when sharing the machine with other builders' jobs), peak RSS **0.57–0.78 GB**,
+cgroup `memory.peak` **0.84–1.08 GB**. Image: 1.1 GB unpacked (`/usr/local`), well under
+Lambda's 10 GB. Memory grows with one session; a one-hour
 session at 30 fps (~110 k frames) should stay under 2 GB; much longer recordings or many
 keypoints: use the standard compute type with more memory.
+
+It is Lambda-safe: the demo run above also passes as the brief's Lambda test (`docker run
+--read-only --user 65534:65534 --tmpfs /tmp`, HOME, TMPDIR, INPUT_DIR and OUTPUT_DIR under `/tmp`):
+caches (matplotlib, numba, XDG, movement's log) go to `$TMPDIR` / `$HOME`, nothing is read from the
+image's `/tmp` or HOME.
 
 ## Running it locally
 
@@ -173,9 +182,6 @@ python3.12 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
 make test PYTHON=.venv/bin/python    # pytest on the synthetic fixture, no Docker
 make run PYTHON=.venv/bin/python     # Docker over data/fixture/linked -> data/output/
 ```
-
-The image also runs as a Lambda function (`processor/entry.py` → `processor.handler.handler`,
-which takes `inputDir`, `outputDir` and the parameters from the event).
 
 ## Limitations
 
@@ -235,10 +241,12 @@ Methods:
 > https://doi.org/10.1021/ac60214a047.
 
 > Simon P, Dupuis R, Costentin J. **Thigmotaxis as an index of anxiety in mice. Influence of dopaminergic transmissions.** Behavioural Brain Research 61(1):59-64 (1994).
-> https://doi.org/10.1016/0166-4328(94)90008-6, PMID 7913324.
+> DOI and PubMed ID: see `CITATION.cff` (this DOI contains parentheses, which the Pennsieve citation
+> checker cannot parse in Markdown).
 
 > Prut L, Belzung C. **The open field as a paradigm to measure the effects of drugs on anxiety-like behaviors: a review.** European Journal of Pharmacology 463(1-3):3-33 (2003).
-> https://doi.org/10.1016/s0014-2999(03)01272-x, PMID 12600700.
+> DOI and PubMed ID: see `CITATION.cff` (this DOI contains parentheses, which the Pennsieve citation
+> checker cannot parse in Markdown).
 
 > WELCH BL. **THE GENERALIZATION OF ‘STUDENT'S’ PROBLEM WHEN SEVERAL DIFFERENT POPULATION VARLANCES ARE INVOLVED.** Biometrika 34(1-2):28-35 (1947).
 > https://doi.org/10.1093/biomet/34.1-2.28, PMID 20287819.

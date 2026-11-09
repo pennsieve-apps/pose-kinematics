@@ -23,6 +23,24 @@ UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]
 POSE_SUFFIX_RE = re.compile(r"(DLC_.*|\.predictions.*|\.analysis.*|_pose|_predictions)$")
 
 
+def writable_caches() -> str:
+    """Point every library cache at $TMPDIR (Lambda: only INPUT_DIR, OUTPUT_DIR, HOME and TMPDIR are
+    writable, and nothing the image put in /tmp or HOME survives). Called before matplotlib, numba,
+    movement or JAX are imported."""
+    import tempfile
+
+    tmp = os.environ.get("TMPDIR") or tempfile.gettempdir()
+    for var, sub in (("MPLCONFIGDIR", "mpl"), ("NUMBA_CACHE_DIR", "numba"), ("XDG_CACHE_HOME", "cache")):
+        if not os.environ.get(var) or not os.access(os.environ[var], os.W_OK):
+            os.environ[var] = os.path.join(tmp, sub)
+        os.makedirs(os.environ[var], exist_ok=True)
+    if not os.environ.get("HOME") or not os.access(os.environ["HOME"], os.W_OK):
+        os.environ["HOME"] = os.path.join(tmp, "home")
+        os.makedirs(os.environ["HOME"], exist_ok=True)
+    os.environ.setdefault("USER", "app")
+    return tmp
+
+
 def cgroup_cpus() -> int:
     """CPUs from the cgroup quota (v2 cpu.max, v1 cfs), else the affinity mask; never the host's count alone."""
     try:

@@ -11,4 +11,3 @@ pyarrow==26.0.1
 matplotlib==3.11.2
 h5py==3.16.0
 tables==3.11.1
-awslambdaric==4.2.3
