@@ -155,7 +155,7 @@ correlates with theirs at Pearson r = 0.96–0.99 (Spearman 0.92–0.98) in all 
 exception the jump filter exists for: its DeepLabCut body centre jumps ~80 cm away and back within
 0.3 s at t ≈ 46 s and 103 s with high confidence (speeds up to 943 cm/s). Without the filter these
 excursions added 4.8 m (9 %) to F07's distance and, as single huge speeds, dropped the speed
-correlation to Pearson r 0.38 (Spearman 0.95, measured by the independent review). With `MAX_SPEED_CM_S=150` (173 points dropped across 14 keypoints) F07
+correlation to Pearson r 0.38 (Spearman 0.95, measured by the independent review). With `MAX_SPEED_CM_S=150` (173 points dropped, on 11 of the 14 keypoints) F07
 travels 48.3 m (was 53.0 m) and r = 0.99; the authors' own `Position` has a similar excursion at
 t ≈ 53 s (6 steps > 10 cm, 3.3 m), and without it their path is 50.4 m. The filter drops 11–105
 points in the other sessions (nose, head and tail base mostly) without changing their distances
