@@ -1,0 +1,176 @@
+# yaml-language-server: $schema=https://schemas.pennsieve.io/app-manifest/v1.json
+schemaVersion: "1.0"
+application:
+  name: Pose Kinematics
+  description: >-
+    Turns pose tracks into clean trajectories and open-field measures with movement (SWC
+    Neuroinformatics Unit): removes low-confidence keypoints, fills short gaps, smooths, converts
+    pixels to cm (from ARENA_SIZE_CM, PX_PER_CM or the session NWB's arena geometry), and computes
+    speed, heading, angular speed, body length, distance travelled, time in the centre, periphery,
+    wall zone and user ROIs (thigmotaxis). Reads ndx-pose NWB (pose-estimate, DANDI), DeepLabCut,
+    SLEAP and Lightning Pose files; keeps the session clock (NWB timestamps). Writes a behaviour NWB,
+    kinematics.parquet for behavior-syllables, occupancy and metrics tables, a condition comparison
+    (Welch t-test, Hedges g) and figures with captions.
+  type: processor
+  tags:
+    - neuroscience
+    - behavior
+    - nwb
+    - video
+    - pose-estimation
+    - kinematics
+    - open-field
+    - deeplabcut
+    - sleap
+runtime:
+  cpu: 1024
+  # Measured on the demo data (6 sessions x 12 min, linux/amd64 under emulation): see README "Runtime".
+  memory: 2048
+  # A light step: the image also runs as a Lambda function (processor/entry.py).
+  computeTypes:
+    - standard
+    - lambda
+  timeoutSeconds: 900
+parameters:
+  - name: CONFIDENCE_THRESHOLD
+    type: number
+    description: >-
+      Keypoints whose confidence (DeepLabCut likelihood, SLEAP score) is below this are removed before
+      interpolation; 0 = keep every point.
+    defaultValue: 0.6
+    min: 0
+  - name: MAX_GAP_S
+    type: number
+    description: Gaps (missing or removed points) up to this long, in seconds, are filled by linear interpolation; longer ones stay missing.
+    defaultValue: 0.5
+    min: 0
+  - name: SMOOTHING
+    type: string
+    description: "savgol (Savitzky-Golay, order 2), median (rolling median, robust to single-frame jumps) or none."
+    defaultValue: savgol
+    validValues:
+      - savgol
+      - median
+      - none
+  - name: SMOOTH_WINDOW_S
+    type: number
+    description: Smoothing window in seconds (rounded to an odd number of frames).
+    defaultValue: 0.2
+    min: 0
+  - name: ARENA_SIZE_CM
+    type: string
+    description: >-
+      Arena diameter (circle) or side (square) in cm, or WxH for a rectangle, e.g. "40x60". Sets the
+      px -> cm scale from the arena outline in the session NWB, else from the extent of the tracks
+      (approximate). 0 = unknown: the scale then comes from PX_PER_CM, the session NWB, or stays in pixels.
+    defaultValue: "0"
+  - name: PX_PER_CM
+    type: number
+    description: Pixels per cm in the video; overrides everything else. 0 = automatic.
+    defaultValue: 0
+    min: 0
+  - name: ARENA_SHAPE
+    type: string
+    description: "Arena shape when the session NWB has no outline: auto (guessed from where the animal went), circle or rectangle."
+    defaultValue: auto
+    validValues:
+      - auto
+      - circle
+      - rectangle
+  - name: CENTER_FRACTION
+    type: number
+    description: The centre zone is the arena shrunk about its centre to this fraction of its diameter (or sides); 0.5 = a quarter of the area.
+    defaultValue: 0.5
+    min: 0.05
+    max: 0.95
+  - name: WALL_ZONE_FRACTION
+    type: number
+    description: Thigmotaxis = share of time within this fraction of the arena diameter (or short side) from the wall; 0.1 = about 10 cm in a 98 cm arena.
+    defaultValue: 0.1
+    min: 0.01
+    max: 0.49
+  - name: ROIS
+    type: string
+    description: >-
+      Extra regions, as JSON: a list of {"name", "type": circle|rectangle|polygon, "center" + "radius"
+      | "x0","y0","x1","y1" | "points", "units": px|cm}, or a GeoJSON FeatureCollection of polygons
+      (as drawn in napari with movement). Empty = none.
+    defaultValue: ""
+    required: false
+  - name: BODY_KEYPOINTS
+    type: string
+    description: Keypoint(s) whose mean is the body centroid (comma-separated); auto = a body-centre keypoint, else the mean of the non-tail keypoints.
+    defaultValue: auto
+  - name: HEAD_KEYPOINT
+    type: string
+    description: Head end of the heading vector; auto = head centre / neck, else the midpoint of the ears, else the nose.
+    defaultValue: auto
+  - name: TAIL_KEYPOINT
+    type: string
+    description: Tail end of the heading vector and of body length; auto = tail base.
+    defaultValue: auto
+  - name: FPS
+    type: number
+    description: Frame rate for pose files without timestamps (DeepLabCut / SLEAP without a session NWB or timestamps CSV); 0 = from the file, else 30.
+    defaultValue: 0
+    min: 0
+  - name: IMMOBILE_SPEED
+    type: number
+    description: Centroid speed (cm/s) below which a frame counts as immobile; also the floor for distance_moving.
+    defaultValue: 2.0
+    min: 0
+  - name: GROUP_BY
+    type: string
+    description: The sessions.csv column whose values are compared (e.g. genotype); falls back to `group` when `condition` is empty.
+    defaultValue: condition
+  - name: THREADS
+    type: integer
+    description: Threads for numpy/BLAS; 0 = from the container's CPU quota.
+    defaultValue: 0
+    min: 0
+inputs:
+  - name: pose
+    description: >-
+      Pose files, one per session: ndx-pose NWB (pose-estimate's <session_id>_pose.nwb, or any DANDI
+      NWB with PoseEstimation), DeepLabCut .h5/.csv, SLEAP .slp / analysis .h5, Lightning Pose .csv.
+      Optional sessions.csv (session_id, path, subject_id, condition, ...) and
+      <video stem>_timestamps.csv (frame, time).
+    mediaTypes:
+      - "application/x-hdf5; profile=nwb"
+      - application/x-hdf5
+      - text/csv
+      - application/octet-stream
+    placement: subfolder
+    required: true
+  - name: session
+    description: >-
+      Optional session NWB files (e.g. the DANDI file the video came from): frame timestamps, the
+      arena_geometry outline and px/cm scale, a Position series in cm, and the session identity
+      (session_start_time, subject) copied into the outputs. Matched by session_id or sessions.csv.
+    mediaTypes:
+      - "application/x-hdf5; profile=nwb"
+    placement: subfolder
+    required: false
+outputs:
+  - name: kinematics
+    description: >-
+      pose-kinematics/<session_id>_behavior.nwb (cleaned PoseEstimation, BehavioralTimeSeries, Position,
+      arena_regions), <session_id>_kinematics.parquet (time x features, for behavior-syllables),
+      occupancy.csv, metrics.csv, group_stats.csv, sessions.csv, figures, summary.json, provenance.json.
+    mediaTypes:
+      - "application/x-hdf5; profile=nwb"
+      - application/vnd.apache.parquet
+      - text/csv
+      - application/json
+      - image/png
+
+# How a release is tested before it is made public: the inputs a review run uses.
+# See app-deploy-service docs/app-manifest-review.md. The generator image has no pynwb, so the review
+# fixture is DeepLabCut CSV only.
+review:
+  version: 1
+  generate:
+    command: python -m tests.make_fixture "$REVIEW_INPUT_DIR" --layout linked --seconds 30 --no-nwb
+    root: linked
+  parameters:
+    PX_PER_CM: 8
