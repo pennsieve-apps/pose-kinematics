@@ -8,8 +8,8 @@ Computational Neuroscience Unit, University College London**
 ([documentation](https://movement.neuroinformatics.dev), Zenodo
 [10.5281/zenodo.12755724](https://doi.org/10.5281/zenodo.12755724)). It reads pose files made with
 [DeepLabCut](https://github.com/DeepLabCut/DeepLabCut) (Mathis lab, EPFL; Mathis et al. 2018),
-[SLEAP](https://github.com/talmolab/sleap) (Talmo Pereira, Salk Institute, and Murthy lab,
-Princeton; Pereira et al. 2022) and [Lightning Pose](https://github.com/paninski-lab/lightning-pose)
+[SLEAP](https://github.com/talmolab/sleap) (Talmo Pereira, Salk Institute, and the Murthy and
+Shaevitz labs, Princeton; Pereira et al. 2022) and [Lightning Pose](https://github.com/paninski-lab/lightning-pose)
 (Paninski lab, Columbia), and NWB files with the [ndx-pose](https://github.com/rly/ndx-pose)
 extension (Ryan Ly, Ben Dichter, Alexander Mathis, Talmo Pereira and colleagues) through
 [PyNWB](https://github.com/NeurodataWithoutBorders/pynwb) (Neurodata Without Borders; Rübel et al.
@@ -241,12 +241,10 @@ Methods:
 > https://doi.org/10.1021/ac60214a047.
 
 > Simon P, Dupuis R, Costentin J. **Thigmotaxis as an index of anxiety in mice. Influence of dopaminergic transmissions.** Behavioural Brain Research 61(1):59-64 (1994).
-> DOI and PubMed ID: see `CITATION.cff` (this DOI contains parentheses, which the Pennsieve citation
-> checker cannot parse in Markdown).
+> https://doi.org/10.1016/0166-4328(94)90008-6, PMID 7913324.
 
 > Prut L, Belzung C. **The open field as a paradigm to measure the effects of drugs on anxiety-like behaviors: a review.** European Journal of Pharmacology 463(1-3):3-33 (2003).
-> DOI and PubMed ID: see `CITATION.cff` (this DOI contains parentheses, which the Pennsieve citation
-> checker cannot parse in Markdown).
+> https://doi.org/10.1016/s0014-2999(03)01272-x, PMID 12600700.
 
 > WELCH BL. **THE GENERALIZATION OF ‘STUDENT'S’ PROBLEM WHEN SEVERAL DIFFERENT POPULATION VARLANCES ARE INVOLVED.** Biometrika 34(1-2):28-35 (1947).
 > https://doi.org/10.1093/biomet/34.1-2.28, PMID 20287819.
