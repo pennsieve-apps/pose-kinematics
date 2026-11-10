@@ -1,0 +1,358 @@
+cff-version: 1.2.0
+message: If you use this app, please cite it and the works it builds on, listed under references.
+type: software
+title: Pose Kinematics
+abstract: Cleans pose tracks (confidence filter, gap interpolation, smoothing) and computes open-field kinematics (speed,
+  heading, angular speed, body length, distance travelled, time in centre, periphery, wall zone and user ROIs) with movement,
+  from ndx-pose NWB, DeepLabCut, SLEAP or Lightning Pose files; writes a behaviour NWB, a kinematics table for behavior-syllables
+  and a condition comparison. Part of the Pennsieve Markerless Behaviour workflow.
+authors:
+- name: Pennsieve (University of Pennsylvania)
+contact:
+- given-names: Joost
+  family-names: Wagenaar
+  orcid: https://orcid.org/0009-0004-5925-5451
+  affiliation: University of Pennsylvania
+repository-code: https://github.com/pennsieve-apps/pose-kinematics
+license: Apache-2.0
+keywords:
+- neuroscience
+- behavior
+- nwb
+- pose-estimation
+- kinematics
+- open-field
+references:
+- type: software
+  title: 'neuroinformatics-unit/movement: v0.17.0'
+  authors:
+  - name: Niko Sirmpilatze
+  - name: Chang Huan Lo
+  - name: sfmig
+  - name: Adam Tyson
+  - name: Will Graham
+  - name: Stella Prins
+  - name: Tushar Das
+  - name: Brandon Peri
+  - name: Dhruv
+  - name: Ishaan Shaikh
+  - name: Sanjana soni
+  - name: Varun Singh
+  - name: ishan372or
+  - name: Eduardo Augusto Almeida lira
+  - name: Luigi Petrucco
+  - name: Tushar-Verma
+  - name: animeshsasan
+  - name: carlocastoldi
+  - name: vybhav72954
+  - name: Anna Teruel
+  - name: CeliaLrt
+  - name: DPWebster
+  - name: Dhruv yadav
+  - name: Holly Morley
+  - name: Haris shakeel
+  - name: Harsh Bhanushali
+  - name: Harshdip Saha
+  year: 2026
+  doi: 10.5281/zenodo.12755724
+  publisher:
+    name: Zenodo
+- type: article
+  title: 'DeepLabCut: markerless pose estimation of user-defined body parts with deep learning'
+  authors:
+  - family-names: Mathis
+    given-names: Alexander
+  - family-names: Mamidanna
+    given-names: Pranav
+  - family-names: Cury
+    given-names: Kevin M.
+  - family-names: Abe
+    given-names: Taiga
+  - family-names: Murthy
+    given-names: Venkatesh N.
+  - family-names: Mathis
+    given-names: Mackenzie Weygandt
+  - family-names: Bethge
+    given-names: Matthias
+  year: 2018
+  journal: Nature Neuroscience
+  volume: 21
+  issue: '9'
+  start: '1281'
+  end: '1289'
+  doi: 10.1038/s41593-018-0209-y
+  identifiers:
+  - type: other
+    value: '30127430'
+    description: PubMed ID
+- type: article
+  title: Using DeepLabCut for 3D markerless pose estimation across species and behaviors
+  authors:
+  - family-names: Nath
+    given-names: Tanmay
+  - family-names: Mathis
+    given-names: Alexander
+  - family-names: Chen
+    given-names: An Chi
+  - family-names: Patel
+    given-names: Amir
+  - family-names: Bethge
+    given-names: Matthias
+  - family-names: Mathis
+    given-names: Mackenzie Weygandt
+  year: 2019
+  journal: Nature Protocols
+  volume: 14
+  issue: '7'
+  start: '2152'
+  end: '2176'
+  doi: 10.1038/s41596-019-0176-0
+  identifiers:
+  - type: other
+    value: '31227823'
+    description: PubMed ID
+- type: article
+  title: 'SLEAP: A deep learning system for multi-animal pose tracking'
+  authors:
+  - family-names: Pereira
+    given-names: Talmo D.
+  - family-names: Tabris
+    given-names: Nathaniel
+  - family-names: Matsliah
+    given-names: Arie
+  - family-names: Turner
+    given-names: David M.
+  - family-names: Li
+    given-names: Junyu
+  - family-names: Ravindranath
+    given-names: Shruthi
+  - family-names: Papadoyannis
+    given-names: Eleni S.
+  - family-names: Normand
+    given-names: Edna
+  - family-names: Deutsch
+    given-names: David S.
+  - family-names: Wang
+    given-names: Z. Yan
+  - family-names: McKenzie-Smith
+    given-names: Grace C.
+  - family-names: Mitelut
+    given-names: Catalin C.
+  - family-names: Castro
+    given-names: Marielisa Diez
+  - family-names: D’Uva
+    given-names: John
+  - family-names: Kislin
+    given-names: Mikhail
+  - family-names: Sanes
+    given-names: Dan H.
+  - family-names: Kocher
+    given-names: Sarah D.
+  - family-names: Wang
+    given-names: Samuel S.-H.
+  - family-names: Falkner
+    given-names: Annegret L.
+  - family-names: Shaevitz
+    given-names: Joshua W.
+  - family-names: Murthy
+    given-names: Mala
+  year: 2022
+  journal: Nature Methods
+  volume: 19
+  issue: '4'
+  start: '486'
+  end: '495'
+  doi: 10.1038/s41592-022-01426-1
+  identifiers:
+  - type: other
+    value: '35379947'
+    description: PubMed ID
+- type: article
+  title: The Neurodata Without Borders ecosystem for neurophysiological data science
+  authors:
+  - family-names: Rübel
+    given-names: Oliver
+  - family-names: Tritt
+    given-names: Andrew
+  - family-names: Ly
+    given-names: Ryan
+  - family-names: Dichter
+    given-names: Benjamin K
+  - family-names: Ghosh
+    given-names: Satrajit
+  - family-names: Niu
+    given-names: Lawrence
+  - family-names: Baker
+    given-names: Pamela
+  - family-names: Soltesz
+    given-names: Ivan
+  - family-names: Ng
+    given-names: Lydia
+  - family-names: Svoboda
+    given-names: Karel
+  - family-names: Frank
+    given-names: Loren
+  - family-names: Bouchard
+    given-names: Kristofer E
+  year: 2022
+  journal: eLife
+  volume: 11
+  start: e78362
+  doi: 10.7554/eLife.78362
+  identifiers:
+  - type: other
+    value: '36193886'
+    description: PubMed ID
+- type: article
+  title: Smoothing and Differentiation of Data by Simplified Least Squares Procedures.
+  authors:
+  - family-names: Savitzky
+    given-names: Abraham.
+  - family-names: Golay
+    given-names: M. J. E.
+  year: 1964
+  journal: Analytical Chemistry
+  volume: 36
+  issue: '8'
+  start: '1627'
+  end: '1639'
+  doi: 10.1021/ac60214a047
+- type: article
+  title: Thigmotaxis as an index of anxiety in mice. Influence of dopaminergic transmissions
+  authors:
+  - family-names: Simon
+    given-names: P.
+  - family-names: Dupuis
+    given-names: R.
+  - family-names: Costentin
+    given-names: J.
+  year: 1994
+  journal: Behavioural Brain Research
+  volume: 61
+  issue: '1'
+  start: '59'
+  end: '64'
+  doi: 10.1016/0166-4328(94)90008-6
+  identifiers:
+  - type: other
+    value: '7913324'
+    description: PubMed ID
+- type: article
+  title: 'The open field as a paradigm to measure the effects of drugs on anxiety-like behaviors: a review'
+  authors:
+  - family-names: Prut
+    given-names: Laetitia
+  - family-names: Belzung
+    given-names: Catherine
+  year: 2003
+  journal: European Journal of Pharmacology
+  volume: 463
+  issue: 1-3
+  start: '3'
+  end: '33'
+  doi: 10.1016/s0014-2999(03)01272-x
+  identifiers:
+  - type: other
+    value: '12600700'
+    description: PubMed ID
+- type: article
+  title: THE GENERALIZATION OF ‘STUDENT'S’ PROBLEM WHEN SEVERAL DIFFERENT POPULATION VARLANCES ARE INVOLVED
+  authors:
+  - family-names: WELCH
+    given-names: B. L.
+  year: 1947
+  journal: Biometrika
+  volume: 34
+  issue: 1-2
+  start: '28'
+  end: '35'
+  doi: 10.1093/biomet/34.1-2.28
+  identifiers:
+  - type: other
+    value: '20287819'
+    description: PubMed ID
+- type: article
+  title: On a Test of Whether one of Two Random Variables is Stochastically Larger than the Other
+  authors:
+  - family-names: Mann
+    given-names: H. B.
+  - family-names: Whitney
+    given-names: D. R.
+  year: 1947
+  journal: The Annals of Mathematical Statistics
+  volume: 18
+  issue: '1'
+  start: '50'
+  end: '60'
+  doi: 10.1214/aoms/1177730491
+- type: article
+  title: Distribution Theory for Glass's Estimator of Effect size and Related Estimators
+  authors:
+  - family-names: Hedges
+    given-names: Larry V.
+  year: 1981
+  journal: Journal of Educational Statistics
+  volume: 6
+  issue: '2'
+  start: '107'
+  end: '128'
+  doi: 10.3102/10769986006002107
+- type: data
+  title: Hippocampal CA1 one-photon calcium imaging and pose-tracked behavior in wild-type and 5xFAD mice across four behavioral
+    paradigms
+  authors:
+  - family-names: Plusnin
+    given-names: Viktor
+  - family-names: Pospelov
+    given-names: Nikita
+  year: 2026
+  doi: 10.48324/dandi.002047/0.261106.0903
+  publisher:
+    name: DANDI Archive
+- type: software
+  title: 'ndx-pose: NWB extension to store pose estimation data'
+  authors:
+  - family-names: Ly
+    given-names: Ryan
+  - family-names: Dichter
+    given-names: Ben
+  - family-names: Mathis
+    given-names: Alexander
+  - family-names: Maree
+    given-names: Liezl
+  - family-names: Brozdowski
+    given-names: Chris
+  - family-names: Mayorquin
+    given-names: Heberto
+  - family-names: Pereira
+    given-names: Talmo
+  - family-names: Berrigan
+    given-names: Elizabeth
+  - family-names: Adkisson
+    given-names: Paul
+  - family-names: Trapani
+    given-names: Alessandra
+  repository-code: https://github.com/rly/ndx-pose
+  license: BSD-3-Clause
+  version: 0.4.0
+- type: software
+  title: 'sleap-io: Standalone utilities for working with pose data from SLEAP and other tools'
+  authors:
+  - family-names: Murali
+    given-names: Divya
+  - family-names: Maree
+    given-names: Liezl
+  - family-names: Samy
+    given-names: David
+  - family-names: Pereira
+    given-names: Talmo
+  repository-code: https://github.com/talmolab/sleap-io
+  license: BSD-3-Clause
+  version: 0.9.5
+- type: software
+  title: PyNWB
+  authors:
+  - name: Neurodata Without Borders
+  repository-code: https://github.com/NeurodataWithoutBorders/pynwb
+  license: BSD-3-Clause
+  version: 4.2.0
