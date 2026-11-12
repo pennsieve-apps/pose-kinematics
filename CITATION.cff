@@ -1,5 +1,6 @@
 cff-version: 1.2.0
-message: If you use this app, please cite it and the works it builds on, listed under references.
+message: >-
+  If you use this app, please cite the work it implements (preferred-citation), this release, and Pennsieve (RRID:SCR_021677); the other works it builds on are listed under references.
 type: software
 title: Pose Kinematics
 abstract: Cleans pose tracks (confidence filter, gap interpolation, smoothing) and computes open-field kinematics (speed,
@@ -22,6 +23,42 @@ keywords:
 - pose-estimation
 - kinematics
 - open-field
+# The work this app implements; the release report's "How to cite" puts it first.
+preferred-citation:
+  type: software
+  title: 'neuroinformatics-unit/movement: v0.17.0'
+  authors:
+  - name: Niko Sirmpilatze
+  - name: Chang Huan Lo
+  - name: sfmig
+  - name: Adam Tyson
+  - name: Will Graham
+  - name: Stella Prins
+  - name: Tushar Das
+  - name: Brandon Peri
+  - name: Dhruv
+  - name: Ishaan Shaikh
+  - name: Sanjana soni
+  - name: Varun Singh
+  - name: ishan372or
+  - name: Eduardo Augusto Almeida lira
+  - name: Luigi Petrucco
+  - name: Tushar-Verma
+  - name: animeshsasan
+  - name: carlocastoldi
+  - name: vybhav72954
+  - name: Anna Teruel
+  - name: CeliaLrt
+  - name: DPWebster
+  - name: Dhruv yadav
+  - name: Holly Morley
+  - name: Haris shakeel
+  - name: Harsh Bhanushali
+  - name: Harshdip Saha
+  year: 2026
+  doi: 10.5281/zenodo.12755724
+  publisher:
+    name: Zenodo
 references:
 - type: software
   title: 'neuroinformatics-unit/movement: v0.17.0'
